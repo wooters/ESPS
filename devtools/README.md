@@ -73,3 +73,30 @@ Legacy figure note:
 - Some docs include `.gps` figure assets (Masscomp "Graphic Primitive String" plot/metafile format), referenced via `.GP ... .GE` in roff sources (for example, `history.prme` and `doc/filter/filter.rgeme`).
 - Historically these figures were handled through `gpstt` in an `refer | eqn | gpstt | iroff -me` pipeline.
 - Keep this in mind for HTML migration: `.gps` content will need a dedicated conversion path (for example, to image or SVG assets).
+
+### `build-docs-phase2.sh`
+
+Build a navigable static documentation website from legacy ESPS docs (Phase 1 staged text, regenerated man-page Markdown, help docs, and legacy figure assets).
+
+Usage:
+
+```bash
+./devtools/build-docs-phase2.sh [--out-dir build/docs-phase2] [--strict errors|warnings|none] [--scope core-plus] [--keep-going] [--dry-run] [--base-url /]
+```
+
+Example:
+
+```bash
+./devtools/build-docs-phase2.sh --out-dir build/docs-phase2 --strict errors --scope core-plus --keep-going
+```
+
+Outputs:
+- Website source tree: `<out-dir>/site-src/`
+- Built site: `<out-dir>/site/`
+- Figure assets and placeholders: `<out-dir>/assets/figures/`
+- Per-file logs: `<out-dir>/logs/`
+- Reports:
+  - `<out-dir>/summary.md`
+  - `<out-dir>/summary.json`
+  - `<out-dir>/manifest.content.json`
+  - `<out-dir>/manifest.figures.json`
