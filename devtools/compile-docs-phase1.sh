@@ -21,6 +21,7 @@ USAGE
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
+GENERAL_MAN_ROOT="$REPO_ROOT/ESPS/general/man"
 
 OUT_DIR="build/docs-phase1"
 STRICT="errors"
@@ -217,6 +218,70 @@ contains_pattern() {
   grep -Eq "$pattern" "$file"
 }
 
+resolve_man_so_target_path() {
+  local token="$1"
+  local base_dir="$2"
+
+  case "$token" in
+    \$MANDIR\$/man[135]/*)
+      printf '%s/%s\n' "$GENERAL_MAN_ROOT" "${token#\$MANDIR\$/}"
+      ;;
+    /usr/esps/man/man[135]/*)
+      printf '%s/%s\n' "$GENERAL_MAN_ROOT" "${token#/usr/esps/man/}"
+      ;;
+    man[135]/*)
+      printf '%s/%s\n' "$GENERAL_MAN_ROOT" "$token"
+      ;;
+    /*)
+      printf '%s\n' "$token"
+      ;;
+    *)
+      printf '%s/%s\n' "$base_dir" "$token"
+      ;;
+  esac
+}
+
+resolve_man_stub_source() {
+  local start_file="$1"
+  local current="$start_file"
+  local depth=0
+  local token=""
+  local next=""
+  local visited=""
+
+  while [[ "$depth" -lt 24 ]]; do
+    token=$(awk '
+      /^[[:space:]]*$/ { next }
+      {
+        if ($1 == ".\\\"") { next }
+        if ($1 == ".so") { print $2 }
+        exit
+      }
+    ' "$current")
+
+    if [[ -z "$token" ]]; then
+      break
+    fi
+
+    next=$(resolve_man_so_target_path "$token" "$(dirname "$current")")
+    if [[ ! -f "$next" ]]; then
+      break
+    fi
+    if [[ "$next" == "$current" ]]; then
+      break
+    fi
+    if printf '%s\n' "$visited" | grep -Fxq "$next"; then
+      break
+    fi
+
+    visited="${visited}"$'\n'"$next"
+    current="$next"
+    depth=$((depth + 1))
+  done
+
+  printf '%s\n' "$current"
+}
+
 run_doc_render() {
   local src_abs="$1"
   local rel="$2"
@@ -288,11 +353,44 @@ run_man_render() {
   local log_path="$4"
 
   local hard_fail=0
-  local tmpdir cur nxt nroff_out out_tmp
+  local tmpdir cur nxt nroff_out out_tmp normalized_input source_for_render
   tmpdir=$(mktemp -d)
-  cur="$src_abs"
-
+  normalized_input="$tmpdir/00-input"
   : > "$log_path"
+  source_for_render=$(resolve_man_stub_source "$src_abs")
+
+  # Normalize legacy include paths used by historical ESPS man sources.
+  # Many files contain directives like:
+  #   .so $MANDIR$/man3/foo.3
+  # Rewriting them to concrete repo paths allows soelim to resolve them.
+  if ! awk -v manroot="$GENERAL_MAN_ROOT" -v basedir="$(dirname "$source_for_render")" '
+    function norm(p) {
+      if (p ~ /^\$MANDIR\$\//) {
+        sub(/^\$MANDIR\$\//, "", p)
+        return manroot "/" p
+      }
+      if (p ~ /^\/usr\/esps\/man\//) {
+        sub(/^\/usr\/esps\/man\//, "", p)
+        return manroot "/" p
+      }
+      if (p ~ /^man[135]\//) {
+        return manroot "/" p
+      }
+      if (p ~ /^\//) {
+        return p
+      }
+      return basedir "/" p
+    }
+
+    /^[[:space:]]*\.so[[:space:]]+/ {
+      print ".so " norm($2)
+      next
+    }
+    { print $0 }
+  ' "$source_for_render" > "$normalized_input" 2>> "$log_path"; then
+    hard_fail=1
+  fi
+  cur="$normalized_input"
 
   nxt="$tmpdir/01-soelim"
   if ! soelim "$cur" > "$nxt" 2>> "$log_path"; then
@@ -300,7 +398,7 @@ run_man_render() {
   fi
   cur="$nxt"
 
-  if contains_pattern "$src_abs" '^\\.TS|^\\.TE'; then
+  if contains_pattern "$source_for_render" '^\\.TS|^\\.TE'; then
     nxt="$tmpdir/02-tbl"
     if ! tbl "$cur" > "$nxt" 2>> "$log_path"; then
       hard_fail=1
@@ -308,7 +406,7 @@ run_man_render() {
     cur="$nxt"
   fi
 
-  if contains_pattern "$src_abs" '^\\.EQ|^\\.EN'; then
+  if contains_pattern "$source_for_render" '^\\.EQ|^\\.EN'; then
     nxt="$tmpdir/03-eqn"
     if ! eqn "$cur" > "$nxt" 2>> "$log_path"; then
       hard_fail=1
