@@ -233,17 +233,25 @@ normalize_legacy_roff() {
 
   # Compatibility normalization for older roff sources:
   # - ".\ @(#)..."  -> roff comment line
+  # - ".lo"         -> ignored legacy local-macro hook
   # - "\fi..."      -> "\fI..."
+  # - "\fCW"        -> "\fR" (fallback; avoids missing-font warnings)
+  # - "\fLR"        -> "\fR" (fallback; avoids missing-font warnings)
   # - bare "\f"     -> "\fP" (reset font)
   # - "\(\-1\s-1"   -> "(1-" (manual section reference)
   # - ".ft i"       -> ".ft I"
+  # - ".ft CW/LR"   -> ".ft R" (fallback)
   perl -pe '
     s/^\.\s*\\\s+/.\\\" /;
+    s/^\.lo(\s.*)?$/.\\\" .lo$1/;
     s/\\fi/\\fI/g;
+    s/\\fCW/\\fR/g;
+    s/\\fLR/\\fR/g;
     s/\\f(?=[\s\.,;:\)\]\}"'"'"'])/\\fP/g;
     s/\\\(\-1\\s-1/(1-/g;
     s/\\\(\\-1\\s-1/(1-/g;
     s/^(\.\s*ft\s+)i(\s*)$/${1}I$2/;
+    s/^(\.\s*ft\s+)(CW|LR)(\s*)$/${1}R$3/;
   ' "$input_file" > "$output_file"
 }
 
