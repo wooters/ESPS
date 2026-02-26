@@ -194,9 +194,15 @@ classify_log() {
 
   warn_count=$(grep -Eic "warning:|not supported by this version of 'me'|cannot select font" "$log_path" 2>/dev/null || true)
   err_count=$(grep -Eic 'error:' "$log_path" 2>/dev/null || true)
+  benign_tbl_err=$(grep -Eic '^tbl:.*error: excess table entry .* discarded' "$log_path" 2>/dev/null || true)
 
   if [[ "$hard_fail" -ne 0 && "$err_count" -eq 0 ]]; then
     err_count=1
+  fi
+
+  if [[ "$hard_fail" -eq 0 && "$benign_tbl_err" -gt 0 && "$err_count" -ge "$benign_tbl_err" ]]; then
+    err_count=$((err_count - benign_tbl_err))
+    warn_count=$((warn_count + benign_tbl_err))
   fi
 
   # Known legacy behavior: history.prme produces many troff parser "error:"
@@ -237,20 +243,29 @@ normalize_legacy_roff() {
   # - "\fi..."      -> "\fI..."
   # - "\fCW"        -> "\fR" (fallback; avoids missing-font warnings)
   # - "\fLR"        -> "\fR" (fallback; avoids missing-font warnings)
+  # - "\f*name"     -> "\fIname" (legacy emphasis shorthand)
+  # - "\ESPS"       -> "\-ESPS" (legacy section ref typo)
   # - bare "\f"     -> "\fP" (reset font)
   # - "\(\-1\s-1"   -> "(1-" (manual section reference)
+  # - ".br\f..."    -> "\f..." (broken line-break+text form)
   # - ".ft i"       -> ".ft I"
+  # - ".ftI"        -> ".ft I"
   # - ".ft CW/LR"   -> ".ft R" (fallback)
   perl -pe '
     s/^\.\s*\\\s+/.\\\" /;
     s/^\.lo(\s.*)?$/.\\\" .lo$1/;
+    s/^\\?\.wave_pro/\\&.wave_pro/;
     s/\\fi/\\fI/g;
     s/\\fCW/\\fR/g;
     s/\\fLR/\\fR/g;
+    s/\\f\*([A-Za-z0-9_]+)/\\fI$1/g;
+    s/\\ESPS/\\-ESPS/g;
     s/\\f(?=[\s\.,;:\)\]\}"'"'"'])/\\fP/g;
     s/\\\(\-1\\s-1/(1-/g;
     s/\\\(\\-1\\s-1/(1-/g;
+    s/^\.br\\f/\\f/;
     s/^(\.\s*ft\s+)i(\s*)$/${1}I$2/;
+    s/^\.ftI\b/.ft I/;
     s/^(\.\s*ft\s+)(CW|LR)(\s*)$/${1}R$3/;
   ' "$input_file" > "$output_file"
 }
@@ -443,13 +458,11 @@ run_man_render() {
   fi
   cur="$nxt"
 
-  if contains_pattern "$source_for_render" '^\\.TS|^\\.TE'; then
-    nxt="$tmpdir/02-tbl"
-    if ! tbl "$cur" > "$nxt" 2>> "$log_path"; then
-      hard_fail=1
-    fi
-    cur="$nxt"
+  nxt="$tmpdir/02-tbl"
+  if ! tbl "$cur" > "$nxt" 2>> "$log_path"; then
+    hard_fail=1
   fi
+  cur="$nxt"
 
   if contains_pattern "$source_for_render" '^\\.EQ|^\\.EN'; then
     nxt="$tmpdir/03-eqn"
@@ -460,7 +473,7 @@ run_man_render() {
   fi
 
   nroff_out="$tmpdir/04-nroff"
-  if ! nroff -man "$cur" > "$nroff_out" 2>> "$log_path"; then
+  if ! nroff -man -rLL=120n "$cur" > "$nroff_out" 2>> "$log_path"; then
     hard_fail=1
   fi
 
