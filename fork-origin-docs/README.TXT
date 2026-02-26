@@ -5,7 +5,8 @@ can provide any form of support for this code. The archive does not claim
 to be complete in any sense. No attempt has been made to test it in order
 to verify whether it can be compiled.
 
-This software is licensed using a BSD-style license, see the file BSD.txt.
+This software is licensed using a BSD-style license; see ../LICENSE
+(canonical, GitHub-recognized) and BSD.TXT (historical text).
 
 Update 09 Feb, 2009
 ======================
