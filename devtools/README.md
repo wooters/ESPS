@@ -68,3 +68,8 @@ Outputs:
 - Summary reports:
   - `<out-dir>/summary.md`
   - `<out-dir>/summary.json`
+
+Legacy figure note:
+- Some docs include `.gps` figure assets (Masscomp "Graphic Primitive String" plot/metafile format), referenced via `.GP ... .GE` in roff sources (for example, `history.prme` and `doc/filter/filter.rgeme`).
+- Historically these figures were handled through `gpstt` in an `refer | eqn | gpstt | iroff -me` pipeline.
+- Keep this in mind for HTML migration: `.gps` content will need a dedicated conversion path (for example, to image or SVG assets).
