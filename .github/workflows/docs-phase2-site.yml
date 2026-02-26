@@ -2,24 +2,6 @@ name: Docs Phase 2 Site
 
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - "ESPS/**"
-      - "devtools/build-docs-phase2.sh"
-      - "devtools/docs_phase2/**"
-      - "devtools/compile-docs-phase1.sh"
-      - "devtools/README.md"
-      - ".github/workflows/docs-phase2-site.yml"
-  push:
-    branches:
-      - main
-    paths:
-      - "ESPS/**"
-      - "devtools/build-docs-phase2.sh"
-      - "devtools/docs_phase2/**"
-      - "devtools/compile-docs-phase1.sh"
-      - "devtools/README.md"
-      - ".github/workflows/docs-phase2-site.yml"
 
 jobs:
   build-docs-phase2:
