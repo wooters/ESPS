@@ -100,3 +100,27 @@ Outputs:
   - `<out-dir>/summary.json`
   - `<out-dir>/manifest.content.json`
   - `<out-dir>/manifest.figures.json`
+
+Note:
+- Phase 2 docs generation is now intended to run locally (one-time snapshot workflow), not as a recurring GitHub Action pipeline.
+
+### `snapshot-docs-phase2-local.sh`
+
+Run a full local Phase 2 docs build and package a one-time snapshot archive.
+
+Usage:
+
+```bash
+./devtools/snapshot-docs-phase2-local.sh [--out-dir build/docs-phase2-local] [--snapshot-dir build/docs-phase2-snapshots] [--strict errors|warnings|none] [--scope core-plus] [--keep-going] [--base-url /] [--venv /path/to/venv]
+```
+
+Example:
+
+```bash
+./devtools/snapshot-docs-phase2-local.sh --venv /tmp/esps-phase2-venv --strict errors --keep-going
+```
+
+Outputs:
+- Snapshot working dir: `<snapshot-dir>/esps-docs-phase2-<timestamp>-<commit>/`
+- Snapshot tarball: `<snapshot-dir>/esps-docs-phase2-<timestamp>-<commit>.tar.gz`
+- Snapshot zip (if `zip` is available): `<snapshot-dir>/esps-docs-phase2-<timestamp>-<commit>.zip`

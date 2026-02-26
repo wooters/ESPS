@@ -2,7 +2,7 @@
 """Attempt conversion of legacy Aster*x Words (.aw) documents.
 
 Adapter A: external converter if available.
-Adapter B: metadata/text extraction fallback + placeholder asset.
+Adapter B: metadata/text extraction fallback + generated preview asset.
 """
 
 from __future__ import annotations
@@ -17,10 +17,42 @@ import sys
 import xml.sax.saxutils as saxutils
 
 
-def write_placeholder(path: str, title: str, detail: str) -> None:
+def write_preview_svg(path: str, title: str, subtitle: str, lines: list[str]) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    w, h = 960, 240
-    svg = f"""<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{w}\" height=\"{h}\" viewBox=\"0 0 {w} {h}\">\n  <rect x=\"0\" y=\"0\" width=\"{w}\" height=\"{h}\" fill=\"#eff6ff\" stroke=\"#3b82f6\" stroke-width=\"2\"/>\n  <text x=\"24\" y=\"64\" font-family=\"monospace\" font-size=\"24\" fill=\"#1e3a8a\">{saxutils.escape(title)}</text>\n  <text x=\"24\" y=\"104\" font-family=\"monospace\" font-size=\"16\" fill=\"#1e3a8a\">{saxutils.escape(detail)}</text>\n</svg>\n"""
+    body_lines = lines[:20]
+    w = 1200
+    h = 220 + max(0, len(body_lines) * 26)
+    y = 54
+
+    escaped_title = saxutils.escape(title)
+    escaped_subtitle = saxutils.escape(subtitle)
+    rendered = [
+        f"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{w}\" height=\"{h}\" viewBox=\"0 0 {w} {h}\">",
+        f"  <rect x=\"0\" y=\"0\" width=\"{w}\" height=\"{h}\" fill=\"#f8fafc\" stroke=\"#475569\" stroke-width=\"2\"/>",
+        f"  <text x=\"24\" y=\"{y}\" font-family=\"monospace\" font-size=\"28\" fill=\"#0f172a\">{escaped_title}</text>",
+    ]
+    y += 34
+    rendered.append(
+        f"  <text x=\"24\" y=\"{y}\" font-family=\"monospace\" font-size=\"16\" fill=\"#334155\">{escaped_subtitle}</text>"
+    )
+    y += 24
+    rendered.append(
+        f"  <line x1=\"24\" y1=\"{y}\" x2=\"{w - 24}\" y2=\"{y}\" stroke=\"#94a3b8\" stroke-width=\"1\"/>"
+    )
+    y += 26
+
+    if not body_lines:
+        body_lines = ["(No preview lines extracted from this AW file.)"]
+
+    for line in body_lines:
+        txt = saxutils.escape(line)
+        rendered.append(
+            f"  <text x=\"24\" y=\"{y}\" font-family=\"monospace\" font-size=\"15\" fill=\"#1e293b\">{txt}</text>"
+        )
+        y += 24
+
+    rendered.append("</svg>")
+    svg = "\n".join(rendered) + "\n"
     with open(path, "w", encoding="utf-8") as f:
         f.write(svg)
 
@@ -64,6 +96,59 @@ def extract_metadata(raw: bytes) -> dict:
             printable.append(line)
     info["printable_snippets"] = printable[:200]
     return info
+
+
+def extract_preview_lines(raw: bytes) -> list[str]:
+    text = raw.decode("latin-1", errors="replace")
+
+    out: list[str] = []
+    seen = set()
+
+    def add_line(line: str) -> None:
+        clean = " ".join(line.strip().split())
+        clean = re.sub(r"[^ -~]", "", clean)
+        clean = clean.replace("\\", "").strip()
+        if len(clean) < 8 or len(clean) > 140:
+            return
+        if sum(ch.isalpha() for ch in clean) < 4:
+            return
+        if clean.startswith(("SETUP_", "RU TB", "H0 ", "H1 ", "AL LI", "CO ", "EF ", "WP ", "RS ", "AT ")):
+            return
+        if clean.startswith("TX"):
+            return
+        if clean in {"Footnotes", "footnote"}:
+            return
+        if clean.startswith("Last saved by Words"):
+            return
+        if clean.endswith("doc.info 0"):
+            return
+        if re.match(r'^"[a-z]",\d{4,}', clean):
+            return
+        if clean.startswith(("SC", "IC CP")):
+            return
+        if clean in seen:
+            return
+        seen.add(clean)
+        out.append(clean)
+
+    # Prefer text payload lines (TX...) from Aster*x Words content streams.
+    for m in re.finditer(r"TX([ -~]{1,180})", text):
+        add_line(m.group(1))
+
+    if len(out) >= 5:
+        return out[:40]
+
+    # Quoted text often carries visible labels/strings.
+    for m in re.finditer(r'"([^"\n]{4,140})"', text):
+        add_line(m.group(1))
+
+    # Fallback printable chunks.
+    chunks = re.split(r"[^ -~\n\r\t]+", text)
+    for chunk in chunks:
+        for line in chunk.splitlines():
+            add_line(line)
+
+    return out[:40]
 
 
 def try_external_adapter(input_path: str, out_base: str) -> tuple[bool, str, str | None, list[str], str]:
@@ -152,9 +237,9 @@ def main() -> int:
             raw = f.read()
 
         if not raw:
-            placeholder = args.out_base + ".svg"
-            write_placeholder(placeholder, "AW conversion unavailable", "Input is empty.")
-            result["asset"] = placeholder
+            preview = args.out_base + ".svg"
+            write_preview_svg(preview, "AW conversion unavailable", "Input is empty.", [])
+            result["asset"] = preview
             result["warnings"].append("input file empty")
             print(json.dumps(result, ensure_ascii=True))
             return 0
@@ -171,18 +256,18 @@ def main() -> int:
             result["adapter"] = adapter
             result["asset"] = asset_path
         else:
-            # Adapter B: metadata extraction + placeholder card.
-            placeholder = args.out_base + ".svg"
-            write_placeholder(
-                placeholder,
-                "AW rendering not available",
-                "Using extracted metadata report and placeholder image.",
+            # Adapter B: metadata extraction + generated preview card.
+            preview = args.out_base + ".svg"
+            preview_lines = extract_preview_lines(raw)
+            write_preview_svg(
+                preview,
+                f"AW Preview: {os.path.basename(args.input)}",
+                "Generated from extracted text/metadata (no external AW renderer).",
+                preview_lines,
             )
-            result["status"] = "warning"
-            result["adapter"] = "metadata_fallback"
-            result["asset"] = placeholder
-            if not result["warnings"]:
-                result["warnings"].append("no external AW converter found")
+            result["status"] = "success"
+            result["adapter"] = "metadata_preview"
+            result["asset"] = preview
 
         report_lines = [
             f"# Legacy AW Extraction: `{os.path.basename(args.input)}`",
@@ -209,11 +294,11 @@ def main() -> int:
         print(json.dumps(result, ensure_ascii=True))
         return 0
     except Exception as exc:  # pragma: no cover
-        placeholder = args.out_base + ".svg"
-        write_placeholder(placeholder, "AW conversion failed", str(exc))
+        preview = args.out_base + ".svg"
+        write_preview_svg(preview, "AW conversion failed", str(exc), [])
         result["status"] = "warning"
         result["adapter"] = "exception_fallback"
-        result["asset"] = placeholder
+        result["asset"] = preview
         result["warnings"].append(str(exc))
         with open(result["report"], "w", encoding="utf-8") as f:
             f.write(f"# Legacy AW Extraction Error\n\n- Error: `{exc}`\n")
