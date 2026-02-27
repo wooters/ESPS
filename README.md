@@ -38,6 +38,56 @@ This project stands on work from many contributors across academia and industry,
 - [HTK history (CUED/HTK project mirror)](https://spandh.dcs.shef.ac.uk/ed_arena/htk/history.html)
 - [Upstream mirror repository: jeremysalwen/ESPS](https://github.com/jeremysalwen/ESPS)
 
+## Building on Modern macOS
+
+The ESPS codebase compiles on modern macOS (Apple clang 17, arm64) with minimal source changes. GUI/X11/audio components are excluded.
+
+### Quick Start
+
+```bash
+cd ESPS/general
+./SETUP                    # Generates emake, defaults install to /usr/esps
+./ESPS_INSTALL             # Builds and installs everything
+```
+
+Or to build into a custom directory:
+
+```bash
+cd ESPS/general
+./SETUP -p /path/to/install
+./ESPS_INSTALL
+```
+
+### What Gets Built
+
+- **165 CLI utilities** (fft, lpcana, get_f0, frame, sgram, etc.)
+- **7 libraries**: `libespsg.a`, `libhdre.a`, `libhdrw.a`, `libhdrs.a`, `libhdrn.a`, `libesignal.a`, `libexv.a`
+
+### Excluded Components
+
+The following components require X11/XView/audio hardware not available on modern macOS and are skipped:
+
+libxv, xwaves (ATT), audio, image, formsy, ps_ana, gpstohp, exprompt, expromptrun, fbuttons, mbuttons, plot3d, send_xwaves, wsystem, xacf, xtext, epochs, xfir_filt, xpz
+
+### Changes Required for macOS Compilation
+
+All changes are minimal — only what the compiler requires:
+
+**Build system:**
+- `SETUP` — C89 compatibility flags (`-std=gnu89`, `-Wno-implicit-*`), non-fatal XView detection, guarded macAudio copy
+- `COMPILE` — Copy `other_includes` before build, comment out X11/GUI/HP components
+- `lib/makefile` — Remove X11-dependent `xsend.o` from library objects
+- `ATT/libsig/Makefile` — Remove XView dependency
+- `lib_header/makefile` — Add `mkdir -p` for build subdirectories
+- sphere2.6 Makefiles — Replace `gcc -ansi` with `gnu89` + warning suppression
+
+**Source code (6 files, compiler-required only):**
+- `sphere.h` — Guard `u_int` macro with `__APPLE__` to avoid typedef conflict
+- `fixio.c` — Add `#include <unistd.h>` for `swab()` declaration
+- `vqdesign.c` — Add `#include <stdlib.h>`, fix implicit int declaration
+- `vqencode.c` — Add `#include <stdlib.h>` for `exit()` declaration
+- `addfeahd.c`, `btosps.c` — Add `LINUX_OR_MAC` to platform guards for lvalue cast
+
 ## Documentation
 
 - Live ESPS manual pages (upstream mirror): [jeremysalwen/ESPS `ESPS/general/man`](https://github.com/jeremysalwen/ESPS/tree/master/ESPS/general/man)
