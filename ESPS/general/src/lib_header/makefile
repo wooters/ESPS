@@ -61,6 +61,7 @@ esps/headers.o:  license.c headers.o $(SINC)/header.h  \
 			$(SINC)/esps.h   sphere.o \
 			$(ESIGNAL_LIB)/libesignal.a esignal_fea.o  pc_wav.o
 		$(ELM_CC) -c  $(CFLAGS)   -DESPS_PROG $(NO_LIC) license.c
+		mkdir -p esps
 		mv license.o esps
 		ld -o esps/headers.o -r headers.o  esps/license.o \
 		  sphere.o \
@@ -71,6 +72,7 @@ waves/headers.o: license.c headers.o  $(SINC)/header.h   \
 			$(SINC)/esps.h   sphere.o \
 			$(ESIGNAL_LIB)/libesignal.a esignal_fea.o  pc_wav.o
 		$(ELM_CC) -c $(OFLAGS) $(CFLAGS) -I$(XVIEW_INC) -DWAVES_PROG $(NO_LIC) license.c
+		mkdir -p waves
 		mv license.o waves
 		ld -o waves/headers.o -r headers.o waves/license.o \
 		sphere.o \
@@ -81,6 +83,7 @@ ers/headers.o: license.c headers.o  $(SINC)/header.h   \
 			$(SINC)/esps.h sphere.o \
 			$(ESIGNAL_LIB)/libesignal.a esignal_fea.o  pc_wav.o
 		$(ELM_CC) -c $(CFLAGS) -I$(XVIEW_INC) -DWAVES_PROG -DERS_PROG $(NO_LIC) license.c
+		mkdir -p ers
 		mv license.o ers
 		ld -o ers/headers.o -r headers.o ers/license.o \
 		sphere.o \

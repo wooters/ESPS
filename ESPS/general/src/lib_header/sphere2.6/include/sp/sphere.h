@@ -32,7 +32,7 @@ extern "C" {
 #include <sp/wavpack/wavpack.h>
 #include <sp/version.h>
 
-#ifndef u_int
+#if !defined(u_int) && !defined(__APPLE__)
 #define u_int unsigned int
 #endif
 

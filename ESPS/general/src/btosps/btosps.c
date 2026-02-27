@@ -279,7 +279,7 @@ char  **argv;
 
     if(foreign_header) {
     	*add_genhd_l("foreign_hd_length", (long *)NULL, 1, oh) = skip;
-#if defined(IBM_RS6000) || defined(DS3100) || defined(SG) || defined(HP400) || defined(M5600) || defined(OS5) || defined(LINUX)
+#if defined(IBM_RS6000) || defined(DS3100) || defined(SG) || defined(HP400) || defined(M5600) || defined(OS5) || defined(LINUX) || defined(LINUX_OR_MAC)
 	foreign_hd_ptr = malloc((unsigned)skip);
 #else
 	(char *)foreign_hd_ptr = malloc((unsigned)skip);

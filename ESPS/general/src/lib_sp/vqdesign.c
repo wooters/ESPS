@@ -14,6 +14,7 @@
  * This function designs a full-search vector quantization codebook
 */
 #include <stdio.h>
+#include <stdlib.h>
 #include <esps/esps.h>
 #include <esps/fea.h>
 #include <esps/vq.h>
@@ -476,7 +477,7 @@ int *error;
  */
 {
     int i;
-    static first = 1;		    /*flag for first time through*/
+    static int first = 1;	    /*flag for first time through*/
     static float **newcodebook;	    /*storage for new codewords*/
     long n_tosplit;	    /*number of codewords to split*/
     long n_index;	    /*index for new codewords*/

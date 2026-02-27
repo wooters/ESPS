@@ -46,7 +46,7 @@ INCLUDE = $(PROJECT_ROOT)/include
 LIBDIR	= $(LIBS)
 
 CFLAGS	= -I$(INCLUDE) -L$(LIBDIR) $(LOCAL_CFLAGS)
-CC	= gcc -ansi 
+CC	= gcc -std=gnu89 -D_FORTIFY_SOURCE=0 -Wno-implicit-function-declaration -Wno-implicit-int -Wno-return-type
 INSTALL	= install -c -s -m 755
 
 MAKEFILE	= Makefile

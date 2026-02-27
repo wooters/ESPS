@@ -29,7 +29,7 @@ tmpfile.o typeconver.o uniq_name.o updatewave.o vqsupport.o \
 execcom.o tempname.o feadstsupp.o isespsfile.o \
 pr_farray.o typesiz.o findespsfi.o getespsbas.o sendwaves.o feafiltsupp.o \
 buildespsp.o convertlab.o trngswitch.o malloc.o ereader.o wavesshow.o \
-is_numeric.o xsend.o audio_.o  audio_mac.o usleep.o eddy.o
+is_numeric.o audio_.o  audio_mac.o usleep.o eddy.o
 
 SRCS =	\
 addstr.c anafeasupp.c atoarray.c atoh.c copy_fea_rec.c \
@@ -47,7 +47,7 @@ tmpfile.c typeconver.c uniq_name.c updatewave.c vqsupport.c \
 pr_farray.c typesiz.c \
 findespsfi.c getespsbas.c sendwaves.c feafiltsupp.c buildespsp.c \
 convertlab.c trngswitch.c malloc.c ereader.c wavesshow.c \
-is_numeric.c xsend.c audio_.c  usleep.c eddy.c
+is_numeric.c audio_.c  usleep.c eddy.c
 
 $(LIBDIR)/$(LIBNAME):	$(OBJS)
 	ar rv $(LIBDIR)/$(LIBNAME) $?
@@ -79,10 +79,6 @@ updatewave.o:	$(SINC)/esps.h $(SINC)/unix.h
 miio.o:		$(SINC)/esps.h $(SINC)/header.h
 is_complex.o:	$(SINC)/esps.h $(SINC)/fea.h
 fea_compat.o:	$(SINC)/esps.h $(SINC)/fea.h
-xsend.o:	$(SINC)/xwaves_ipc.h 
-	        $(CC) -I$(X_INC) $(CFLAGS) -c xsend.c
-
-
 install:	$(LIBDIR)/$(LIBNAME)
 		rm -f $(SPSDIR)/src_examples/lib/feaspecsupp.c
 		cp feaspecsupp.c $(SPSDIR)/src_examples/lib/feaspecsupp.c

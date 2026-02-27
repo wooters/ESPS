@@ -8,6 +8,7 @@
 
 # include <stdio.h>
 # include <stdlib.h>
+# include <unistd.h>
 /* Changed by Jon Fiscus */
 # include <util/fob.h>
 # include <sp/shorten/shorten.h>

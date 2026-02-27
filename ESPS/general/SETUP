@@ -423,9 +423,9 @@ fi
 #
 if test $MACH = MACOS
  then
-  CC="gcc -fno-builtin" \
-  ANSI_CC="gcc -ansi -DANSI_C"
-  ELM_CC="gcc -DANSI_C"
+  CC="gcc -fno-builtin -std=gnu89 -D_FORTIFY_SOURCE=0 -Wno-implicit-function-declaration -Wno-implicit-int -Wno-return-type -Wno-int-conversion -Wno-incompatible-pointer-types -Wno-parentheses -Wno-dangling-else -Wno-format"
+  ANSI_CC="gcc -std=gnu89 -DANSI_C -D_FORTIFY_SOURCE=0 -Wno-implicit-function-declaration -Wno-implicit-int -Wno-return-type -Wno-int-conversion"
+  ELM_CC="gcc -std=gnu89 -DANSI_C -D_FORTIFY_SOURCE=0 -Wno-implicit-function-declaration -Wno-implicit-int -Wno-return-type -Wno-int-conversion"
   DEFINES="-DLINUX_OR_MAC"
   X_LIB="-L/usr/X11R6/lib -L/usr/lib -lX11"
   X_INC="/usr/X11R6/include"
@@ -1179,8 +1179,14 @@ export LIBMV AUDIOLIB
 if test $MACH = MACOS
  then
 # This is mostly for the MACOS installation to pick up the little Mplay and Mrecord scripts.
-  cp -f ./scripts/* $BINDIR
-  cp -f ../../macAudio/build/audioM $BINDIR
+  if test -d ./scripts; then
+    cp -f ./scripts/* $BINDIR
+  fi
+  if test -f ../../macAudio/build/audioM; then
+    cp -f ../../macAudio/build/audioM $BINDIR
+  else
+    echo "Warning: macAudio/build/audioM not found, skipping audio binary install."
+  fi
 fi
 
 SPSLIB2=$SPSLIB
@@ -1223,16 +1229,20 @@ elif test $MACH = LINUX -o $MACH = MACOS; then
         XVIEW_LIB="-Wl,-Bstatic "$XVIEW_LIB" -Wl,-Bdynamic"
     fi
   else
-    echo "Error: Xview libraries not found in linker path."; exit 1
+    echo "Warning: Xview libraries not found in linker path."
+    echo "GUI components (xwaves, etc.) will not be available."
+    XVIEW_LIB=""
   fi # [ -n "$XV_STAT_OR_DYN" ]
-XVIEW_LIB="$XVIEW_LIB $X_UTIL $WINLIBS"
+if [ -n "$XVIEW_LIB" ] ; then
+  XVIEW_LIB="$XVIEW_LIB $X_UTIL $WINLIBS"
+fi
 echo XVIEW_LIB is $XVIEW_LIB
 # Is there an xview directory in the include path?
   if echo "#include <xview/xview.h>" |cpp >/dev/null 2>&1 ; then
     echo "Xview include files present in include path, we don't need to add them"
   else
-    echo "Error: Xview include files not found in path,"; exit 1
-    echo "include directory"
+    echo "Warning: Xview include files not found in path."
+    echo "GUI components (xwaves, etc.) will not be available."
   fi
   XVIEW_INC="$SINCP"
 else

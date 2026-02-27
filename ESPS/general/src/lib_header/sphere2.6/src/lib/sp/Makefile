@@ -52,7 +52,7 @@ LIBRY	= $(LIBRARY)
 
 CFLAGS	= -I$(INCLUDE) $(PROGCFLAGS) $(LOCAL_CFLAGS)
 #CFLAGS	= -I$(INCLUDE) $(LOCAL_CFLAGS)
-override CC	= gcc -ansi $(CFLAGS)
+override CC	= gcc -std=gnu89 -D_FORTIFY_SOURCE=0 -Wno-implicit-function-declaration -Wno-implicit-int -Wno-return-type $(CFLAGS)
 
 MAKEFILE	= Makefile
 .PRECIOUS: $(MAKEFILE)

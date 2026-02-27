@@ -51,7 +51,7 @@ OBJ	= cfg.o comments.o ds.o err_util.o fobops.o hist.o hsgetopt.o itoa.o maldie.
 LIBRY	= $(LIBRARY)
 
 CFLAGS	= -I$(INCLUDE) $(LOCAL_CFLAGS)
-CC	= gcc -ansi $(CFLAGS)
+CC	= gcc -std=gnu89 -D_FORTIFY_SOURCE=0 -Wno-implicit-function-declaration -Wno-implicit-int -Wno-return-type $(CFLAGS)
 
 MAKEFILE	= Makefile
 .PRECIOUS: $(MAKEFILE)
