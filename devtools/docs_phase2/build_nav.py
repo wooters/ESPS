@@ -55,7 +55,7 @@ def build_indexes(docs_dir: Path, content: dict[str, Any], figures: dict[str, An
         docs_dir / "index.md",
         "\n".join(
             [
-                "# ESPS Documentation (Phase 2)",
+                "# ESPS Documentation",
                 "",
                 "This site is generated from legacy ESPS documentation sources.",
                 "",
@@ -156,6 +156,9 @@ def build_mkdocs(site_src: Path, content: dict[str, Any], figures: dict[str, Any
     lines.append("  - toc")
     lines.append("  - tables")
     lines.append("  - fenced_code")
+    lines.append("  - codehilite:")
+    lines.append("      guess_lang: false")
+    lines.append("      css_class: highlight")
     lines.append("nav:")
     lines.append("  - Home: index.md")
 
