@@ -60,7 +60,7 @@ cd ESPS/general
 
 ### What Gets Built
 
-- **165 CLI utilities** (fft, lpcana, get_f0, frame, sgram, etc.)
+- **154 compiled CLI utilities** (fft, lpcana, get_f0, frame, sgram, etc.) plus 12 macOS-specific audio scripts/binaries
 - **7 libraries**: `libespsg.a`, `libhdre.a`, `libhdrw.a`, `libhdrs.a`, `libhdrn.a`, `libesignal.a`, `libexv.a`
 
 ### Excluded Components
@@ -87,6 +87,37 @@ All changes are minimal — only what the compiler requires:
 - `vqdesign.c` — Add `#include <stdlib.h>`, fix implicit int declaration
 - `vqencode.c` — Add `#include <stdlib.h>` for `exit()` declaration
 - `addfeahd.c`, `btosps.c` — Add `LINUX_OR_MAC` to platform guards for lvalue cast
+
+## Building on Linux (Ubuntu 24.04)
+
+ESPS also compiles on Ubuntu 24.04 (GCC 13, arm64/x86_64). A Dockerfile is provided for containerized builds.
+
+### Container Build (from macOS)
+
+Requires Apple's [`container`](https://github.com/apple/container) CLI:
+
+```bash
+make container-test
+```
+
+This builds ESPS inside an Ubuntu 24.04 container and produces **154 CLI utilities** (the same compiled programs as macOS; the 12 extra on macOS are platform-specific audio shell scripts).
+
+### Native Linux Build
+
+```bash
+# Install dependencies
+sudo apt-get install gcc libc6-dev make bison flex libx11-dev libxt-dev
+
+cd ESPS/general
+./SETUP -p /usr/esps
+./ESPS_INSTALL
+```
+
+### Key Linux Adaptations
+
+- `SETUP` — GCC flags: `-std=gnu89 -fcommon`, warning suppressions for legacy C, architecture-agnostic X11 library path
+- `SETUP` — Library link order repeats `libhdre.a`/`libespsg.a` to resolve circular dependencies with GNU ld (which processes archives in a single left-to-right pass, unlike macOS ld)
+- `COMPILE` — Creates `libexv.a` stub (XView disabled) using a dummy object for cross-platform `ar` compatibility
 
 ## Documentation
 

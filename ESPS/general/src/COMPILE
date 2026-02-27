@@ -20,6 +20,13 @@ if test x$1 = xlibs
   cd lib_header; emake clean; emake install $CLEAN; cd $current_dir
   cd lib_sp; emake clean; emake install $CLEAN; cd $current_dir
   #cd libxv; emake clean; emake install $CLEAN; cd $current_dir
+  # Create empty libexv.a so components that reference EXV_LIB can link.
+  # macOS ar rejects archives with no members, so compile a dummy object.
+  echo "void __libexv_dummy(void){}" > /tmp/libexv_dummy.c
+  ${CC:-gcc} -c /tmp/libexv_dummy.c -o /tmp/libexv_dummy.o
+  ar rc $ESPS_BASE/lib/libexv.a /tmp/libexv_dummy.o
+  ranlib $ESPS_BASE/lib/libexv.a
+  rm -f /tmp/libexv_dummy.c /tmp/libexv_dummy.o
 fi
 cd utils; emake clean; emake install $CLEAN; cd $current_dir
 cd $current_dir/../man;  emake install

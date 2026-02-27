@@ -398,13 +398,12 @@ here=`pwd`
 #
 if test $MACH = LINUX
  then
-  ANSI_CC="gcc -ansi"
-  ELM_CC="gcc -DANSI_C"
+  CC="gcc -fno-builtin -std=gnu89 -fcommon -D_FORTIFY_SOURCE=0 -Wno-implicit-function-declaration -Wno-implicit-int -Wno-return-type -Wno-int-conversion -Wno-incompatible-pointer-types -Wno-parentheses -Wno-dangling-else -Wno-format"
+  ANSI_CC="gcc -std=gnu89 -fcommon -DANSI_C -D_FORTIFY_SOURCE=0 -Wno-implicit-function-declaration -Wno-implicit-int -Wno-return-type -Wno-int-conversion"
+  ELM_CC="gcc -std=gnu89 -fcommon -DANSI_C -D_FORTIFY_SOURCE=0 -Wno-implicit-function-declaration -Wno-implicit-int -Wno-return-type -Wno-int-conversion"
   DEFINES="-DLINUX_OR_MAC"
-#Xorg libraries that used to be in /usr/X11R6/lib are now in /usr/lib on
-#Fedora Core 5.
-  X_LIB="-L/usr/X11R6/lib -L/usr/lib -lX11"
-  X_INC="/usr/X11R6/include"
+  X_LIB="-lX11"
+  X_INC="/usr/include"
   X_R7_LIBS="-lXdmcp -lXau"
   WINLIBS="$X_LIB -lpthread"
   X_UTIL="-lutil"
@@ -417,6 +416,14 @@ if test $MACH = LINUX
   ln -s makefile.linux makefile
   chmod a+w makefile
   cd $here
+  # GNU ld processes archives left-to-right and only extracts objects that
+  # resolve currently-undefined symbols. The ESPS header and main libraries
+  # have circular dependencies, so repeat both to give the linker enough
+  # passes to resolve everything.
+  SPSLIB=${EXV_LIB}" "${LIBDIR}/${EHDRLIB}" "${LIBDIR}/${LIBNAME}" "${LIBDIR}/${EHDRLIB}" "${LIBDIR}/${LIBNAME}
+  WSPSLIB=${EXV_LIB}" "${LIBDIR}/${WHDRLIB}" "${LIBDIR}/${LIBNAME}" "${LIBDIR}/${WHDRLIB}" "${LIBDIR}/${LIBNAME}
+  NSPSLIB=${EXV_LIB}" "${LIBDIR}/${NHDRLIB}" "${LIBDIR}/${LIBNAME}" "${LIBDIR}/${NHDRLIB}" "${LIBDIR}/${LIBNAME}
+  SSPSLIB=${EXV_LIB}" "${LIBDIR}/${SHDRLIB}" "${LIBDIR}/${LIBNAME}" "${LIBDIR}/${SHDRLIB}" "${LIBDIR}/${LIBNAME}
 fi
 ################################################################################
 # Machine dependent defines for MACOS-X:
