@@ -1,3 +1,5 @@
 /devtools/bin/
+/build/
+/.venv-docs/
 
 __pycache__/

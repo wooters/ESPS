@@ -3,9 +3,60 @@
 This directory contains standalone developer utilities used to modernize and maintain this repository.
 Tools here are not part of the ESPS runtime package itself.
 
-## Available utilities
+## Layout
 
-### `man2md`
+- `devtools/Makefile`: top-level convenience targets for building/running devtools.
+- `devtools/man2md/`: Go source and Makefile for the `man2md` utility.
+- `devtools/compile-docs-phase1.sh`: Phase 1 docs compiler (staged text outputs + reports).
+- `devtools/build-docs-phase2.sh`: Phase 2 docs site builder.
+- `devtools/snapshot-docs-phase2-local.sh`: one-shot local snapshot packager for Phase 2 outputs.
+- `devtools/docs_phase2/`: helper scripts used by Phase 2.
+
+## Common Commands
+
+Show available targets:
+
+```bash
+make -C devtools help
+```
+
+Build `man2md` binary:
+
+```bash
+make -C devtools man2md
+```
+
+Run `man2md` tests:
+
+```bash
+make -C devtools man2md-test
+```
+
+Run Phase 1 docs compile:
+
+```bash
+make -C devtools docs-phase1 STRICT=errors KEEP_GOING=1 PHASE1_OUT=build/docs-phase1
+```
+
+Run Phase 2 docs build:
+
+```bash
+make -C devtools docs-phase2 STRICT=errors KEEP_GOING=1 OUT_DIR=build/docs-phase2-local
+```
+
+Serve a built site locally:
+
+```bash
+make -C devtools docs-serve OUT_DIR=build/docs-phase2-local
+```
+
+Create a local docs snapshot archive:
+
+```bash
+make -C devtools docs-snapshot STRICT=errors KEEP_GOING=1 OUT_DIR=build/docs-phase2-local SNAPSHOT_DIR=build/docs-phase2-snapshots
+```
+
+## `man2md`
 
 Convert a man-page source file to Markdown.
 
@@ -19,12 +70,6 @@ Example:
 
 ```bash
 go run ./devtools/man2md -- ESPS/ATT/formant/man/formant.1 /tmp/formant.md
-```
-
-Build a direct executable:
-
-```bash
-make -C devtools man2md
 ```
 
 Run the compiled binary:
@@ -46,7 +91,7 @@ Example:
 pandoc -f man -t gfm ESPS/general/man/man3/vqencode.3 -o ESPS/general/man/man3/vqencode.3.md
 ```
 
-### `compile-docs-phase1.sh`
+## `compile-docs-phase1.sh`
 
 Compile core legacy documentation sources into staged plain-text outputs with per-file logs and summary reports.
 
@@ -54,12 +99,6 @@ Usage:
 
 ```bash
 ./devtools/compile-docs-phase1.sh [--out-dir build/docs-phase1] [--strict errors|warnings|none] [--scope core] [--keep-going] [--dry-run]
-```
-
-Example:
-
-```bash
-./devtools/compile-docs-phase1.sh --out-dir build/docs-phase1 --strict errors --scope core --keep-going
 ```
 
 Outputs:
@@ -71,10 +110,10 @@ Outputs:
 
 Legacy figure note:
 - Some docs include `.gps` figure assets (Masscomp "Graphic Primitive String" plot/metafile format), referenced via `.GP ... .GE` in roff sources (for example, `history.prme` and `doc/filter/filter.rgeme`).
-- Historically these figures were handled through `gpstt` in an `refer | eqn | gpstt | iroff -me` pipeline.
+- Historically these figures were handled through `gpstt` in a `refer | eqn | gpstt | iroff -me` pipeline.
 - Keep this in mind for HTML migration: `.gps` content will need a dedicated conversion path (for example, to image or SVG assets).
 
-### `build-docs-phase2.sh`
+## `build-docs-phase2.sh`
 
 Build a navigable static documentation website from legacy ESPS docs (Phase 1 staged text, regenerated man-page Markdown, help docs, and legacy figure assets).
 
@@ -82,12 +121,6 @@ Usage:
 
 ```bash
 ./devtools/build-docs-phase2.sh [--out-dir build/docs-phase2] [--strict errors|warnings|none] [--scope core-plus] [--keep-going] [--dry-run] [--base-url /]
-```
-
-Example:
-
-```bash
-./devtools/build-docs-phase2.sh --out-dir build/docs-phase2 --strict errors --scope core-plus --keep-going
 ```
 
 Outputs:
@@ -104,7 +137,7 @@ Outputs:
 Note:
 - Phase 2 docs generation is now intended to run locally (one-time snapshot workflow), not as a recurring GitHub Action pipeline.
 
-### `snapshot-docs-phase2-local.sh`
+## `snapshot-docs-phase2-local.sh`
 
 Run a full local Phase 2 docs build and package a one-time snapshot archive.
 
@@ -112,12 +145,6 @@ Usage:
 
 ```bash
 ./devtools/snapshot-docs-phase2-local.sh [--out-dir build/docs-phase2-local] [--snapshot-dir build/docs-phase2-snapshots] [--strict errors|warnings|none] [--scope core-plus] [--keep-going] [--base-url /] [--venv /path/to/venv]
-```
-
-Example:
-
-```bash
-./devtools/snapshot-docs-phase2-local.sh --venv /tmp/esps-phase2-venv --strict errors --keep-going
 ```
 
 Outputs:

@@ -235,6 +235,19 @@ ensure_parent_dir() {
   mkdir -p "$(dirname "$path")"
 }
 
+strip_ansi_csi() {
+  local in_path="$1"
+  local out_path="$2"
+
+  awk '
+    BEGIN { esc = sprintf("%c", 27) }
+    {
+      gsub(esc "\\[[0-9;]*[[:alpha:]]", "")
+      print
+    }
+  ' "$in_path" > "$out_path"
+}
+
 contains_pattern() {
   local file="$1"
   local pattern="$2"
@@ -402,7 +415,7 @@ run_doc_render() {
   local refs_file="$5"
 
   local hard_fail=0
-  local tmpdir cur nxt nroff_out out_tmp normalized_input normalized_stage
+  local tmpdir cur nxt nroff_out ansi_clean out_tmp normalized_input normalized_stage
   tmpdir=$(mktemp -d)
   normalized_input="$tmpdir/00-input"
   normalized_stage="$tmpdir/00a-input"
@@ -460,8 +473,14 @@ run_doc_render() {
     hard_fail=1
   fi
 
+  ansi_clean="$tmpdir/05a-noansi"
+  if ! strip_ansi_csi "$nroff_out" "$ansi_clean" 2>> "$log_path"; then
+    hard_fail=1
+    ansi_clean="$nroff_out"
+  fi
+
   out_tmp="$tmpdir/06-out"
-  if ! (cat "$nroff_out" | col | ul -tadm3a > "$out_tmp") 2>> "$log_path"; then
+  if ! (cat "$ansi_clean" | col | ul -tadm3a > "$out_tmp") 2>> "$log_path"; then
     hard_fail=1
   fi
 
@@ -482,7 +501,7 @@ run_man_render() {
   local log_path="$4"
 
   local hard_fail=0
-  local tmpdir cur nxt nroff_out out_tmp normalized_input source_for_render normalized_with_so normalized_tblfix
+  local tmpdir cur nxt nroff_out ansi_clean out_tmp normalized_input source_for_render normalized_with_so normalized_tblfix
   tmpdir=$(mktemp -d)
   normalized_input="$tmpdir/00-input"
   normalized_with_so="$tmpdir/00b-input"
@@ -559,8 +578,14 @@ run_man_render() {
     hard_fail=1
   fi
 
+  ansi_clean="$tmpdir/04a-noansi"
+  if ! strip_ansi_csi "$nroff_out" "$ansi_clean" 2>> "$log_path"; then
+    hard_fail=1
+    ansi_clean="$nroff_out"
+  fi
+
   out_tmp="$tmpdir/05-out"
-  if ! col -bx < "$nroff_out" > "$out_tmp" 2>> "$log_path"; then
+  if ! col -bx < "$ansi_clean" > "$out_tmp" 2>> "$log_path"; then
     hard_fail=1
   fi
 

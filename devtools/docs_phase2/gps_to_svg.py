@@ -146,6 +146,10 @@ def emit_svg(path: str, polylines: List[Polyline], texts: List[TextItem]) -> Non
     def ty(y: float) -> float:
         return max_y - y + pad
 
+    stroke_color = "#0b1220"
+    text_color = "#0b1220"
+    stroke_width = 1.9
+
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         f.write(
@@ -158,8 +162,8 @@ def emit_svg(path: str, polylines: List[Polyline], texts: List[TextItem]) -> Non
             pts = " ".join(f"{tx(x):.3f},{ty(y):.3f}" for x, y in pl.points)
             f.write(
                 "  <polyline "
-                f"points=\"{pts}\" fill=\"none\" stroke=\"#1f2937\" stroke-width=\"1.2\" "
-                "stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n"
+                f"points=\"{pts}\" fill=\"none\" stroke=\"{stroke_color}\" stroke-width=\"{stroke_width:.2f}\" "
+                "stroke-linecap=\"round\" stroke-linejoin=\"round\" vector-effect=\"non-scaling-stroke\"/>\n"
             )
 
         for t in texts:
@@ -173,7 +177,9 @@ def emit_svg(path: str, polylines: List[Polyline], texts: List[TextItem]) -> Non
                 transform = f" transform=\"rotate({rot:.3f} {xx:.3f} {yy:.3f})\""
             f.write(
                 f"  <text x=\"{xx:.3f}\" y=\"{yy:.3f}\"{transform} "
-                f"font-family=\"monospace\" font-size=\"{fs:.3f}\" fill=\"#111827\">{text}</text>\n"
+                f"font-family=\"monospace\" font-size=\"{fs:.3f}\" fill=\"{text_color}\" "
+                "font-weight=\"500\">"
+                f"{text}</text>\n"
             )
 
         f.write("</svg>\n")

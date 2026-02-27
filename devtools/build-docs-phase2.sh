@@ -114,6 +114,18 @@ mkdir -p "$OUT_DIR" "$SITE_DOCS" "$ASSETS_DIR" "$SITE_ASSETS_DIR" "$LOG_ROOT"
 : > "$MISSING_REQUIRED_TXT"
 : > "$MISSING_OPTIONAL_TXT"
 
+# Keep rebuilds deterministic in a reused out-dir by clearing generated site trees.
+rm -rf \
+  "$SITE_DOCS/man" \
+  "$SITE_DOCS/notes" \
+  "$SITE_DOCS/help" \
+  "$SITE_DOCS/figures" \
+  "$SITE_DOCS/extras" \
+  "$SITE_DOCS/build-reports" \
+  "$SITE_DOCS/assets/figures"
+rm -f "$SITE_SRC/mkdocs.yml"
+mkdir -p "$SITE_DOCS" "$SITE_ASSETS_DIR"
+
 escape_json() {
   printf '%s' "$1" | perl -0777 -pe 's/\\/\\\\/g; s/"/\\"/g; s/\n/\\n/g; s/\r/\\r/g; s/\t/\\t/g'
 }
@@ -121,6 +133,123 @@ escape_json() {
 ensure_parent_dir() {
   local path="$1"
   mkdir -p "$(dirname "$path")"
+}
+
+normalize_pandoc_man_markdown() {
+  local md_path="$1"
+
+  python3 - "$md_path" <<'PY'
+import re
+import sys
+
+path = sys.argv[1]
+with open(path, "r", encoding="utf-8") as f:
+    lines = f.read().splitlines()
+
+code_sections = {"SYNOPSIS", "EXAMPLE", "EXAMPLES"}
+
+
+def unescape_code_line(s: str) -> str:
+    if s.endswith("\\"):
+        s = s[:-1]
+    s = (
+        s.replace(r"\#", "#")
+        .replace(r"\*", "*")
+        .replace(r"\[", "[")
+        .replace(r"\]", "]")
+        .replace(r"\<", "<")
+        .replace(r"\>", ">")
+        .replace(r"\_", "_")
+    )
+    # Keep real C comment markers (/* ... */), but strip markdown emphasis
+    # wrappers that sometimes appear around placeholder text in examples.
+    s = s.replace("*eof...*", "eof...")
+    s = s.replace("*... fill in desired data record values...*", "... fill in desired data record values...")
+    s = s.replace("*... fill in some values, including hd.filt->max_num and*", "... fill in some values, including hd.filt->max_num and")
+    return s.rstrip()
+
+
+out: list[str] = []
+i = 0
+while i < len(lines):
+    line = lines[i]
+    m = re.match(r"^(#{1,6})\s+(.+?)\s*$", line)
+    if not m:
+        out.append(line)
+        i += 1
+        continue
+
+    out.append(line)
+    section = m.group(2).strip().upper()
+    i += 1
+
+    if section not in code_sections:
+        continue
+
+    while i < len(lines) and lines[i].strip() == "":
+        out.append(lines[i])
+        i += 1
+
+    body: list[str] = []
+    j = i
+    while j < len(lines):
+        if re.match(r"^#{1,6}\s+\S", lines[j]):
+            break
+        body.append(lines[j])
+        j += 1
+
+    converted: list[str] = []
+    in_code = False
+    k = 0
+    while k < len(body):
+        if body[k].strip() == "":
+            converted.append("")
+            k += 1
+            continue
+
+        para: list[str] = []
+        while k < len(body) and body[k].strip() != "":
+            para.append(body[k])
+            k += 1
+
+        if para and para[0].lstrip().startswith("```"):
+            if in_code:
+                converted.append("```")
+                in_code = False
+            converted.extend(para)
+            continue
+
+        joined = "\n".join(para)
+        slash_ratio = sum(1 for ln in para if ln.rstrip().endswith("\\")) / max(1, len(para))
+        codeish_tokens = bool(
+            re.search(
+                r"(#include|;\s*$|\w+\s*\(|->|/\*|\*/|^\s*(struct|int|void|double|float|char|FILE)\b)",
+                joined,
+                re.M,
+            )
+        )
+
+        if slash_ratio >= 0.2 or codeish_tokens:
+            clean = [unescape_code_line(ln) for ln in para if ln.strip() != "\\"]
+            if not in_code:
+                converted.append("```c")
+                in_code = True
+            converted.extend(clean)
+        else:
+            if in_code:
+                converted.append("```")
+                in_code = False
+            converted.extend(para)
+
+    if in_code:
+        converted.append("```")
+
+    out.extend(converted)
+    i = j
+
+with open(path, "w", encoding="utf-8") as f:
+    f.write("\n".join(out) + "\n")
+PY
 }
 
 tool_hint() {
@@ -577,6 +706,10 @@ if [[ "$stop_now" -eq 0 ]]; then
 
     tmp_md=$(mktemp)
     if pandoc -f man -t gfm "$resolved_src" -o "$tmp_md" > "$log_path" 2>&1; then
+      if ! normalize_pandoc_man_markdown "$tmp_md" >> "$log_path" 2>&1; then
+        printf 'warning: markdown postprocess failed for %s\n' "$rel" >> "$log_path"
+      fi
+
       {
         printf '# %s (%s)\n\n' "$name_noext" "$section"
         printf -- '- Source: `%s`\n' "$rel"
