@@ -1,1 +1,0 @@
-See *is_complex*.

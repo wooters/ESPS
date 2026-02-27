@@ -1,4 +1,0 @@
-string filename = "test.sd";
-string prog = "find_ep";
-int start = 1441;
-int nan = 3760;

@@ -1,1 +1,0 @@
-See *copy_genhd*.

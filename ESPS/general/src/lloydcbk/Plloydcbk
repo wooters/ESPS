@@ -1,3 +1,0 @@
-int cbk_size ?= 4 : "number of codewords";
-float convergence ?= .001 : "convergence threshold";
-string distortion ?= "SQUARED_ERROR" : "distortion measure";

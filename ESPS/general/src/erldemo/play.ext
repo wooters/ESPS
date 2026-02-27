@@ -1,4 +1,0 @@
-# play.ext  	@(#)play.ext	1.1 6/3/90
-# play on sparcstation with external speaker
-
-splay -e $*

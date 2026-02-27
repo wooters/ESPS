@@ -1,1 +1,0 @@
-See *add_genhd*.

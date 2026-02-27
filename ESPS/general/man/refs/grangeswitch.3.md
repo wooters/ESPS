@@ -1,1 +1,0 @@
-See *range_switch*.

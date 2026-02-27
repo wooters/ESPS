@@ -1,4 +1,0 @@
-#!/bin/sh
-
-$* `./svlibs`
-exit 0

@@ -1,3 +1,0 @@
-type -all emake
-echo ESPS_BASE is $ESPS_BASE
-echo EMAKE_DIR is $EMAKE_DIR

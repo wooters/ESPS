@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="740" viewBox="0 0 1200 740">
+  <rect x="0" y="0" width="1200" height="740" fill="#f8fafc" stroke="#475569" stroke-width="2"/>
+  <text x="24" y="54" font-family="monospace" font-size="28" fill="#0f172a">AW Preview: 5.0install_update.aw</text>
+  <text x="24" y="88" font-family="monospace" font-size="16" fill="#334155">Generated from extracted text/metadata (no external AW renderer).</text>
+  <line x1="24" y1="112" x2="1176" y2="112" stroke="#94a3b8" stroke-width="1"/>
+  <text x="24" y="138" font-family="monospace" font-size="15" fill="#1e293b">Update to ESPS/</text>
+  <text x="24" y="162" font-family="monospace" font-size="15" fill="#1e293b">Installation Instructions</text>
+  <text x="24" y="186" font-family="monospace" font-size="15" fill="#1e293b">11 August 1993</text>
+  <text x="24" y="210" font-family="monospace" font-size="15" fill="#1e293b">This document updates the enclosed ESPS/</text>
+  <text x="24" y="234" font-family="monospace" font-size="15" fill="#1e293b">installation instructions. There are no significant differences in the in</text>
+  <text x="24" y="258" font-family="monospace" font-size="15" fill="#1e293b">If you are upgrading from a previous version of ESPS/</text>
+  <text x="24" y="282" font-family="monospace" font-size="15" fill="#1e293b">it is particularly important that you read the enclosed release notes. Also</text>
+  <text x="24" y="306" font-family="monospace" font-size="15" fill="#1e293b">eversion</text>
+  <text x="24" y="330" font-family="monospace" font-size="15" fill="#1e293b">Also note that if you are upgrading from ESPS/</text>
+  <text x="24" y="354" font-family="monospace" font-size="15" fill="#1e293b">4.1/2.1 or 4.2/3.1, then your license key files are the same. You can save y</text>
+  <text x="24" y="378" font-family="monospace" font-size="15" fill="#1e293b">$ESPS_BASE/lib/keys</text>
+  <text x="24" y="402" font-family="monospace" font-size="15" fill="#1e293b">directory before you remove the old ESPS and copy those files into the new</text>
+  <text x="24" y="426" font-family="monospace" font-size="15" fill="#1e293b">directory.</text>
+  <text x="24" y="450" font-family="monospace" font-size="15" fill="#1e293b">Be sure that you stop the old</text>
+  <text x="24" y="474" font-family="monospace" font-size="15" fill="#1e293b">is being started in the</text>
+  <text x="24" y="498" font-family="monospace" font-size="15" fill="#1e293b">file be sure that you update the pathname in there. If you are updating fro</text>
+  <text x="24" y="522" font-family="monospace" font-size="15" fill="#1e293b">The differences are:</text>
+  <text x="24" y="546" font-family="monospace" font-size="15" fill="#1e293b">Page 6 (System Requirements):</text>
+  <text x="24" y="570" font-family="monospace" font-size="15" fill="#1e293b">tThe Sparc release requires Sun OS 4.1.1 or greater or Solaris 2.1 or greate</text>
+  <text x="24" y="594" font-family="monospace" font-size="15" fill="#1e293b">Page 8 (Size of Distribution):</text>
+</svg>

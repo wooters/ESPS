@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="558" viewBox="0 0 1200 558">
+  <rect x="0" y="0" width="1200" height="558" fill="#f8fafc" stroke="#475569" stroke-width="2"/>
+  <text x="24" y="54" font-family="monospace" font-size="28" fill="#0f172a">AW Preview: solarismsg.aw</text>
+  <text x="24" y="88" font-family="monospace" font-size="16" fill="#334155">Generated from extracted text/metadata (no external AW renderer).</text>
+  <line x1="24" y1="112" x2="1176" y2="112" stroke="#94a3b8" stroke-width="1"/>
+  <text x="24" y="138" font-family="monospace" font-size="15" fill="#1e293b">Sparc Users:</text>
+  <text x="24" y="162" font-family="monospace" font-size="15" fill="#1e293b">We have versions of ESPS and</text>
+  <text x="24" y="186" font-family="monospace" font-size="15" fill="#1e293b">for both Sun OS 4.x and Solaris 2.x (aka Sun OS 5.x). If your shipment onl</text>
+  <text x="24" y="210" font-family="monospace" font-size="15" fill="#1e293b">5.0 for either Solaris 2.x or Sun OS 4.x. Be sure to include your SO numb</text>
+  <text x="24" y="234" font-family="monospace" font-size="15" fill="#1e293b">You can use both versions at one site if you have machines running both oper</text>
+  <text x="24" y="258" font-family="monospace" font-size="15" fill="#1e293b">Solaris users:</text>
+  <text x="24" y="282" font-family="monospace" font-size="15" fill="#1e293b">Please note that we do not have device drivers for the Ariel Sbus DSP32C boar</text>
+  <text x="24" y="306" font-family="monospace" font-size="15" fill="#1e293b">In the ESPS tutorial,</text>
+  <text x="24" y="330" font-family="monospace" font-size="15" fill="#1e293b">Exploring ESPS,</text>
+  <text x="24" y="354" font-family="monospace" font-size="15" fill="#1e293b">on page 16 make the following correction:</text>
+  <text x="24" y="378" font-family="monospace" font-size="15" fill="#1e293b">Replace the line:</text>
+  <text x="24" y="402" font-family="monospace" font-size="15" fill="#1e293b">od -i triangle.dat</text>
+  <text x="24" y="426" font-family="monospace" font-size="15" fill="#1e293b">od -s triangle.dat</text>
+</svg>

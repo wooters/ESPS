@@ -1,3 +1,0 @@
-#@(#)calc.calc	1.1 6/18/91 ERL - script for waves+ calculator
-echo "" > /dev/tty
-cat tmp.calc ; echo -n " = " ; echo "" | cat tmp.calc - | bc -l
