@@ -1,0 +1,10 @@
+**/*.o
+**/*.a
+**/*.dSYM
+.git
+.github
+.claude/
+CLAUDE.md
+docs/
+devtools/
+*~

@@ -7,6 +7,8 @@ if echo $ua | grep -q -s "[Ll]inux" ; then export ARCH=linux
 elif echo $ua | egrep -q -s "[Dd]arwin|[Mm]ac" ; then export ARCH=mac
 fi
 current_dir=`pwd`
+# Ensure other_includes (sphere, pixrect headers) are in ESPS_BASE/include
+cp -r $current_dir/../other_includes/* $ESPS_BASE/include/ 2>/dev/null
 cd $current_dir/../h; emake clean; emake install $CLEAN; cd $current_dir
 if test x$1 = xlibs
  then
@@ -17,7 +19,14 @@ if test x$1 = xlibs
 	cd $current_dir
   cd lib_header; emake clean; emake install $CLEAN; cd $current_dir
   cd lib_sp; emake clean; emake install $CLEAN; cd $current_dir
-  cd libxv; emake clean; emake install $CLEAN; cd $current_dir
+  #cd libxv; emake clean; emake install $CLEAN; cd $current_dir
+  # Create empty libexv.a so components that reference EXV_LIB can link.
+  # macOS ar rejects archives with no members, so compile a dummy object.
+  echo "void __libexv_dummy(void){}" > /tmp/libexv_dummy.c
+  ${CC:-gcc} -c /tmp/libexv_dummy.c -o /tmp/libexv_dummy.o
+  ar rc $ESPS_BASE/lib/libexv.a /tmp/libexv_dummy.o
+  ranlib $ESPS_BASE/lib/libexv.a
+  rm -f /tmp/libexv_dummy.c /tmp/libexv_dummy.o
 fi
 cd utils; emake clean; emake install $CLEAN; cd $current_dir
 cd $current_dir/../man;  emake install
@@ -30,8 +39,8 @@ case `mach_type` in
 	SG)	AUDIO=sgaudio ;;
 esac
 # HERE IS WHERE XWAVES, ETC. GET MADE....
-cd ../../ATT ; emake clean; emake install $CLEAN;  cd $current_dir
-cd ${ARCH}_audio; emake clean; emake install $CLEAN; cd $current_dir
+#cd ../../ATT ; emake clean; emake install $CLEAN;  cd $current_dir
+#cd ${ARCH}_audio; emake clean; emake install $CLEAN; cd $current_dir
 cd acf; emake clean; emake install $CLEAN; cd $current_dir
 cd addclass; emake clean; emake install $CLEAN; cd $current_dir
 cd addfea; emake clean; emake install $CLEAN; cd $current_dir
@@ -63,9 +72,9 @@ cd ereverse; emake clean; emake install $CLEAN; cd $current_dir
 cd erlsupport; emake clean; emake install $CLEAN; cd $current_dir
 cd esps2mu; emake clean; emake install $CLEAN; cd $current_dir
 cd eversion; emake clean; emake install $CLEAN; cd $current_dir
-cd exprompt; emake clean; emake install $CLEAN; cd $current_dir
-cd expromptrun; emake clean; emake install $CLEAN; cd $current_dir
-cd fbuttons; emake clean; emake install $CLEAN; cd $current_dir
+#cd exprompt; emake clean; emake install $CLEAN; cd $current_dir
+#cd expromptrun; emake clean; emake install $CLEAN; cd $current_dir
+#cd fbuttons; emake clean; emake install $CLEAN; cd $current_dir
 cd fea2mat; emake clean; emake install $CLEAN; cd $current_dir
 cd fea_deriv; emake clean; emake install $CLEAN; cd $current_dir
 cd fea_edit; emake clean; emake install $CLEAN; cd $current_dir
@@ -87,13 +96,13 @@ cd frame; emake clean; emake install $CLEAN; cd $current_dir
 cd genplot; emake clean; emake install $CLEAN; cd $current_dir
 cd get_esps_base; emake clean; emake install $CLEAN; cd $current_dir
 cd getparam; emake clean; emake install $CLEAN; cd $current_dir
-cd gpstohp; emake clean; emake install $CLEAN; cd $current_dir
+#cd gpstohp; emake clean; emake install $CLEAN; cd $current_dir
 cd hditem; emake clean; emake install $CLEAN; cd $current_dir
 cd hdshrink; emake clean; emake install $CLEAN; cd $current_dir
 cd his; emake clean; emake install $CLEAN; cd $current_dir
 cd igenplot; emake clean; emake install $CLEAN; cd $current_dir
 cd iir_filt; emake clean; emake install $CLEAN; cd $current_dir
-cd image; emake clean; emake install $CLEAN; cd $current_dir
+#cd image; emake clean; emake install $CLEAN; cd $current_dir
 cd imlplot; emake clean; emake install $CLEAN; cd $current_dir
 cd impulse_rs; emake clean; emake install $CLEAN; cd $current_dir
 cd larcbk2rc; emake clean; emake install $CLEAN; cd $current_dir
@@ -103,7 +112,7 @@ cd lpcsynt; emake clean; emake install $CLEAN; cd $current_dir
 cd make_sd; emake clean; emake install $CLEAN; cd $current_dir
 cd mat2fea; emake clean; emake install $CLEAN; cd $current_dir
 cd mbrot; emake clean; emake install $CLEAN; cd $current_dir
-cd mbuttons; emake clean; emake install $CLEAN; cd $current_dir
+#cd mbuttons; emake clean; emake install $CLEAN; cd $current_dir
 cd me_sgram; emake clean; emake install $CLEAN; cd $current_dir
 cd me_spec; emake clean; emake install $CLEAN; cd $current_dir
 cd mergefea; emake clean; emake install $CLEAN; cd $current_dir
@@ -114,7 +123,7 @@ cd mux; emake clean; emake install $CLEAN; cd $current_dir
 cd notch_filt; emake clean; emake install $CLEAN; cd $current_dir
 cd pen; emake clean; emake install $CLEAN; cd $current_dir
 cd playtest; emake clean; emake install $CLEAN; cd $current_dir
-cd plot3d; emake clean; emake install $CLEAN; cd $current_dir
+#cd plot3d; emake clean; emake install $CLEAN; cd $current_dir
 cd plotfield; emake clean; emake install $CLEAN; cd $current_dir
 cd pplain; emake clean; emake install $CLEAN; cd $current_dir
 cd psps; emake clean; emake install $CLEAN; cd $current_dir
@@ -125,7 +134,7 @@ cd rem_dc; emake clean; emake install $CLEAN; cd $current_dir
 cd sdcomp; emake clean; emake install $CLEAN; cd $current_dir
 cd sdtofea; emake clean; emake install $CLEAN; cd $current_dir
 # cd select; emake clean; emake install $CLEAN; cd $current_dir
-cd send_xwaves; emake clean; emake install $CLEAN; cd $current_dir
+#cd send_xwaves; emake clean; emake install $CLEAN; cd $current_dir
 cd setmax; emake clean; emake install $CLEAN; cd $current_dir
 cd setrange; emake clean; emake install $CLEAN; cd $current_dir
 cd sfconvert; emake clean; emake install $CLEAN; cd $current_dir
@@ -146,18 +155,18 @@ cd vqclassify; emake clean; emake install $CLEAN; cd $current_dir
 cd vqdst; emake clean; emake install $CLEAN; cd $current_dir
 cd window; emake clean; emake install $CLEAN; cd $current_dir
 cd wmse_filt; emake clean; emake install $CLEAN; cd $current_dir
-cd wsystem; emake clean; emake install $CLEAN; cd $current_dir
-cd xacf; emake clean; emake install $CLEAN; cd $current_dir
+#cd wsystem; emake clean; emake install $CLEAN; cd $current_dir
+#cd xacf; emake clean; emake install $CLEAN; cd $current_dir
 #cd xpz; emake clean; emake install $CLEAN; cd $current_dir
-cd xtext; emake clean; emake install $CLEAN; cd $current_dir
+#cd xtext; emake clean; emake install $CLEAN; cd $current_dir
 cd zcross; emake clean; emake install $CLEAN; cd $current_dir
 cd zero_pole; emake clean; emake install $CLEAN; cd $current_dir
 cd zero_pad; emake clean; emake install $CLEAN; cd $current_dir
 cd e2sphere; emake clean; emake install $CLEAN; cd $current_dir
 cd filter2; emake clean; emake install $CLEAN; cd $current_dir
-cd formsy; emake clean; emake install $CLEAN; cd $current_dir
-cd ps_ana; emake clean; emake install $CLEAN; cd $current_dir
-cd epochs; emake clean; emake install $CLEAN; cd $current_dir
+#cd formsy; emake clean; emake install $CLEAN; cd $current_dir
+#cd ps_ana; emake clean; emake install $CLEAN; cd $current_dir
+#cd epochs; emake clean; emake install $CLEAN; cd $current_dir
 cd feaop; emake clean; emake install $CLEAN; cd $current_dir
 cd lp_syn; emake clean; emake install $CLEAN; cd $current_dir
 cd ps2frame; emake clean; emake install $CLEAN; cd $current_dir
@@ -170,7 +179,7 @@ cd win_filt; emake clean; emake install $CLEAN; cd $current_dir
 # cd meter; emake clean; emake install $CLEAN; cd $current_dir
 cd get_resid; emake clean; emake install $CLEAN; cd $current_dir
 cd zst; emake clean; emake install $CLEAN; cd $current_dir
-cd xfir_filt; emake clean; emake install $CLEAN; cd $current_dir
+#cd xfir_filt; emake clean; emake install $CLEAN; cd $current_dir
 cd ebanner; emake clean; emake install $CLEAN; cd $current_dir
 # cd rasta_plp; emake clean; emake install $CLEAN; cd $current_dir
 cd cepsyn; emake clean; emake install $CLEAN; cd $current_dir
