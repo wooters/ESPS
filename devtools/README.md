@@ -10,6 +10,7 @@ Tools here are not part of the ESPS runtime package itself.
 - `devtools/compile-docs-phase1.sh`: Phase 1 docs compiler (staged text outputs + reports).
 - `devtools/build-docs-phase2.sh`: Phase 2 docs site builder.
 - `devtools/snapshot-docs-phase2-local.sh`: one-shot local snapshot packager for Phase 2 outputs.
+- `devtools/publish-docs-github-pages.sh`: manual GitHub Pages publisher for the built site.
 - `devtools/docs_phase2/`: helper scripts used by Phase 2.
 
 ## Common Commands
@@ -42,6 +43,12 @@ Run Phase 2 docs build:
 
 ```bash
 make -C devtools docs-phase2 STRICT=errors KEEP_GOING=1 OUT_DIR=build/docs-phase2-local
+```
+
+Build and publish to GitHub Pages:
+
+```bash
+make -C devtools docs-publish OUT_DIR=build/docs-phase2-publish BASE_URL=/ESPS/ STRICT=errors KEEP_GOING=1
 ```
 
 Serve a built site locally:
@@ -151,3 +158,38 @@ Outputs:
 - Snapshot working dir: `<snapshot-dir>/esps-docs-phase2-<timestamp>-<commit>/`
 - Snapshot tarball: `<snapshot-dir>/esps-docs-phase2-<timestamp>-<commit>.tar.gz`
 - Snapshot zip (if `zip` is available): `<snapshot-dir>/esps-docs-phase2-<timestamp>-<commit>.zip`
+
+## `publish-docs-github-pages.sh`
+
+Build docs and publish them to a GitHub Pages branch (`gh-pages` by default).
+
+Usage:
+
+```bash
+./devtools/publish-docs-github-pages.sh [--out-dir build/docs-phase2-publish] [--base-url /ESPS/] [--branch gh-pages] [--remote origin] [--strict errors|warnings|none] [--scope core-plus] [--keep-going] [--dry-run] [--no-push]
+```
+
+Example (full publish):
+
+```bash
+./devtools/publish-docs-github-pages.sh --out-dir build/docs-phase2-publish --base-url /ESPS/ --strict errors --scope core-plus --keep-going
+```
+
+Example (build + checks only, no branch mutation):
+
+```bash
+./devtools/publish-docs-github-pages.sh --dry-run --base-url /ESPS/
+```
+
+One-time GitHub Pages settings for this repo:
+
+1. Open `wooters/ESPS` repository settings.
+2. Go to `Pages`.
+3. Set Source to `Deploy from a branch`.
+4. Set Branch to `gh-pages` and folder to `/ (root)`.
+
+Expected site URL:
+
+```text
+https://wooters.github.io/ESPS/
+```

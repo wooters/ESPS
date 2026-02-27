@@ -35,11 +35,28 @@ def is_external(url: str) -> bool:
     )
 
 
-def resolve_target(site_dir: Path, html_file: Path, link: str) -> Path:
+def normalize_base_url(base_url: str) -> str:
+    b = (base_url or "/").strip()
+    if not b:
+        b = "/"
+    if not b.startswith("/"):
+        b = "/" + b
+    if not b.endswith("/"):
+        b = b + "/"
+    return b
+
+
+def resolve_target(site_dir: Path, html_file: Path, link: str, base_url: str) -> Path:
     clean = link.split("#", 1)[0].split("?", 1)[0]
     clean = urllib.parse.unquote(clean)
 
     if clean.startswith("/"):
+        if base_url != "/":
+            prefix = base_url.rstrip("/")
+            if clean == prefix:
+                clean = "/"
+            elif clean.startswith(prefix + "/"):
+                clean = clean[len(prefix) :]
         target = site_dir / clean.lstrip("/")
     else:
         target = (html_file.parent / clean).resolve()
@@ -68,10 +85,12 @@ def exists_target(path: Path) -> bool:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Check internal links in built docs site")
     parser.add_argument("--site-dir", required=True, help="Path to built site root")
+    parser.add_argument("--base-url", default="/", help="Site base URL (for project-site absolute links)")
     parser.add_argument("--out-json", default="", help="Optional output JSON report")
     args = parser.parse_args()
 
     site_dir = Path(args.site_dir).resolve()
+    base_url = normalize_base_url(args.base_url)
     html_files = sorted(site_dir.rglob("*.html"))
 
     issues: list[dict] = []
@@ -85,7 +104,7 @@ def main() -> int:
             if not raw or raw.startswith("#") or is_external(raw):
                 continue
             checked += 1
-            target = resolve_target(site_dir, html_path.resolve(), raw)
+            target = resolve_target(site_dir, html_path.resolve(), raw, base_url)
             if not exists_target(target):
                 issues.append(
                     {
@@ -97,6 +116,7 @@ def main() -> int:
 
     report = {
         "site_dir": str(site_dir),
+        "base_url": base_url,
         "html_files": len(html_files),
         "links_checked": checked,
         "broken_links": len(issues),

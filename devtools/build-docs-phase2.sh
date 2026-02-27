@@ -15,7 +15,7 @@ Options:
   --scope <core-plus>        Scope to build (default: core-plus)
   --keep-going               Continue after per-item failures
   --dry-run                  Discover/report only; no rendering
-  --base-url <path>          Site base URL metadata (default: /)
+  --base-url <path>          Site base URL (default: /)
   -h, --help                 Show help
 USAGE
 }
@@ -87,6 +87,24 @@ if [[ "$OUT_DIR" != /* ]]; then
   OUT_DIR="$REPO_ROOT/$OUT_DIR"
 fi
 
+normalize_base_url() {
+  local b="${1:-/}"
+  b="${b#"${b%%[![:space:]]*}"}"
+  b="${b%"${b##*[![:space:]]}"}"
+  if [[ -z "$b" ]]; then
+    b="/"
+  fi
+  if [[ "${b:0:1}" != "/" ]]; then
+    b="/$b"
+  fi
+  if [[ "${b: -1}" != "/" ]]; then
+    b="$b/"
+  fi
+  printf '%s\n' "$b"
+}
+
+BASE_URL="$(normalize_base_url "$BASE_URL")"
+
 PHASE1_OUT="$OUT_DIR/phase1-staging"
 SITE_SRC="$OUT_DIR/site-src"
 SITE_DOCS="$SITE_SRC/docs"
@@ -103,6 +121,7 @@ SUMMARY_JSON="$OUT_DIR/summary.json"
 SUMMARY_MD="$OUT_DIR/summary.md"
 MANIFEST_CONTENT_JSON="$OUT_DIR/manifest.content.json"
 MANIFEST_FIGURES_JSON="$OUT_DIR/manifest.figures.json"
+ROOT_ABS_LINKS_JSON="$OUT_DIR/root-absolute-links.json"
 
 MISSING_REQUIRED_TXT="$OUT_DIR/.missing_required.txt"
 MISSING_OPTIONAL_TXT="$OUT_DIR/.missing_optional.txt"
@@ -113,6 +132,7 @@ mkdir -p "$OUT_DIR" "$SITE_DOCS" "$ASSETS_DIR" "$SITE_ASSETS_DIR" "$LOG_ROOT"
 : > "$FIGURE_TSV"
 : > "$MISSING_REQUIRED_TXT"
 : > "$MISSING_OPTIONAL_TXT"
+printf '{\n  "count": 0,\n  "issues": []\n}\n' > "$ROOT_ABS_LINKS_JSON"
 
 # Keep rebuilds deterministic in a reused out-dir by clearing generated site trees.
 rm -rf \
@@ -133,6 +153,20 @@ escape_json() {
 ensure_parent_dir() {
   local path="$1"
   mkdir -p "$(dirname "$path")"
+}
+
+doc_relative_link() {
+  local from_doc_rel="$1"
+  local to_doc_rel="$2"
+  python3 - "$from_doc_rel" "$to_doc_rel" <<'PY'
+import os
+import sys
+
+from_doc = sys.argv[1]
+to_doc = sys.argv[2]
+from_dir = os.path.dirname(from_doc) or "."
+print(os.path.relpath(to_doc, start=from_dir).replace(os.sep, "/"))
+PY
 }
 
 normalize_pandoc_man_markdown() {
@@ -445,12 +479,13 @@ PY
 }
 
 write_summary_files() {
-  python3 - "$RESULTS_TSV" "$SUMMARY_JSON" "$SUMMARY_MD" "$MISSING_REQUIRED_TXT" "$MISSING_OPTIONAL_TXT" <<'PY'
+  python3 - "$RESULTS_TSV" "$SUMMARY_JSON" "$SUMMARY_MD" "$MISSING_REQUIRED_TXT" "$MISSING_OPTIONAL_TXT" "$ROOT_ABS_LINKS_JSON" "$BASE_URL" <<'PY'
 import csv
 import json
+import os
 import sys
 
-results_tsv, out_json, out_md, missing_req, missing_opt = sys.argv[1:6]
+results_tsv, out_json, out_md, missing_req, missing_opt, root_abs_json, base_url = sys.argv[1:8]
 
 rows = []
 with open(results_tsv, newline="", encoding="utf-8") as f:
@@ -495,6 +530,14 @@ with open(missing_opt, encoding="utf-8") as f:
         if line:
             missing_optional.append(line)
 
+root_absolute = {"count": 0, "issues": []}
+if os.path.exists(root_abs_json):
+    with open(root_abs_json, encoding="utf-8") as f:
+        try:
+            root_absolute = json.load(f)
+        except json.JSONDecodeError:
+            root_absolute = {"count": 0, "issues": []}
+
 status = "ok"
 if missing_required:
     status = "preflight_failed"
@@ -506,10 +549,12 @@ top_warnings = [r for r in rows if r["status"] == "warning"][:10]
 
 summary = {
     "status": status,
+    "base_url": base_url,
     "totals": totals,
     "categories": categories,
     "missing_required_tools": missing_required,
     "missing_optional_tools": missing_optional,
+    "root_absolute_internal_links": root_absolute,
     "top_failures": top_failures,
     "top_warnings": top_warnings,
 }
@@ -522,6 +567,7 @@ md = []
 md.append("# ESPS Phase-2 Docs Site Build Summary")
 md.append("")
 md.append(f"- Status: `{status}`")
+md.append(f"- Base URL: `{base_url}`")
 md.append(f"- Processed: `{totals['processed']}`")
 md.append(f"- Success: `{totals['success']}`")
 md.append(f"- Warning: `{totals['warning']}`")
@@ -534,6 +580,16 @@ md.append("|---|---:|---:|---:|---:|")
 for cat in sorted(categories.keys()):
     c = categories[cat]
     md.append(f"| {cat} | {c['processed']} | {c['success']} | {c['warning']} | {c['error']} |")
+
+if root_absolute.get("count", 0):
+    md.append("")
+    md.append("## Root-Absolute Internal Links")
+    md.append("")
+    md.append(f"- Count: `{root_absolute.get('count', 0)}`")
+    md.append("")
+    sample = root_absolute.get("issues", [])[:20]
+    for item in sample:
+        md.append(f"- `{item.get('file', '')}`: `{item.get('link', '')}`")
 
 if missing_required:
     md.append("")
@@ -881,11 +937,12 @@ PY
 
       cp "$asset_out" "$site_asset_out"
       web_asset="assets/figures/$asset_rel"
+      img_link=$(doc_relative_link "$doc_rel" "$web_asset")
       {
         printf '# %s\n\n' "$(basename "$rel_under_doc")"
         printf -- '- Source: `%s`\n' "$rel"
         printf -- '- Status: `%s`\n\n' "$status"
-        printf '![%s](/%s)\n\n' "$(basename "$rel_under_doc")" "$web_asset"
+        printf '![%s](%s)\n\n' "$(basename "$rel_under_doc")" "$img_link"
       } > "$doc_out"
 
       if [[ "$status" == "success" ]]; then
@@ -969,13 +1026,17 @@ PY
       doc_out="$SITE_DOCS/$doc_rel"
       ensure_parent_dir "$doc_out"
 
+      report_doc_rel="assets/figures/$report_rel"
+      report_link=$(doc_relative_link "$doc_rel" "$report_doc_rel")
       {
         printf '# %s\n\n' "$(basename "$rel_under_doc")"
         printf -- '- Source: `%s`\n' "$rel"
         printf -- '- Status: `%s`\n' "$status"
-        printf -- '- Adapter report: `/assets/figures/%s`\n\n' "$report_rel"
+        printf -- '- Adapter report: [%s](%s)\n\n' "$(basename "$report_rel")" "$report_link"
         if [[ -n "$asset_rel" ]]; then
-          printf '![%s](/assets/figures/%s)\n\n' "$(basename "$rel_under_doc")" "$asset_rel"
+          asset_doc_rel="assets/figures/$asset_rel"
+          asset_link=$(doc_relative_link "$doc_rel" "$asset_doc_rel")
+          printf '![%s](%s)\n\n' "$(basename "$rel_under_doc")" "$asset_link"
         fi
       } > "$doc_out"
 
@@ -1050,10 +1111,98 @@ fi
 if [[ "$stop_now" -eq 0 && -d "$SITE_BUILD" ]]; then
   LINKCHECK_LOG="$LOG_ROOT/linkcheck.log"
   LINKCHECK_JSON="$LOG_ROOT/linkcheck.json"
-  if "$REPO_ROOT/devtools/docs_phase2/linkcheck.py" --site-dir "$SITE_BUILD" --out-json "$LINKCHECK_JSON" > "$LINKCHECK_LOG" 2>&1; then
+  if "$REPO_ROOT/devtools/docs_phase2/linkcheck.py" --site-dir "$SITE_BUILD" --base-url "$BASE_URL" --out-json "$LINKCHECK_JSON" > "$LINKCHECK_LOG" 2>&1; then
     record_result "linkcheck" "site" "$SITE_BUILD" "$LINKCHECK_LOG" "success" "0" "0" "internal links OK"
   else
     record_result "linkcheck" "site" "$SITE_BUILD" "$LINKCHECK_LOG" "error" "0" "1" "broken internal links"
+  fi
+fi
+
+if [[ "$stop_now" -eq 0 && -d "$SITE_BUILD" ]]; then
+  ROOT_ABS_LOG="$LOG_ROOT/root-absolute-links.log"
+  if python3 - "$SITE_BUILD" "$ROOT_ABS_LINKS_JSON" "$BASE_URL" > "$ROOT_ABS_LOG" 2>&1 <<'PY'
+import html.parser
+import json
+import sys
+from pathlib import Path
+
+site_dir = Path(sys.argv[1]).resolve()
+out_json = Path(sys.argv[2])
+base_url = (sys.argv[3] or "/").strip()
+if not base_url.startswith("/"):
+    base_url = "/" + base_url
+if not base_url.endswith("/"):
+    base_url = base_url + "/"
+base_prefix = base_url.rstrip("/")
+
+
+class LinkParser(html.parser.HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.links: list[str] = []
+
+    def handle_starttag(self, tag, attrs):
+        for k, v in attrs:
+            if k in ("href", "src") and v:
+                self.links.append(v)
+
+
+issues = []
+for html_path in sorted(site_dir.rglob("*.html")):
+    parser = LinkParser()
+    parser.feed(html_path.read_text(encoding="utf-8", errors="replace"))
+    for link in parser.links:
+        if not link or link.startswith("#"):
+            continue
+        if link.startswith("//"):
+            continue
+        if link.startswith("/"):
+            if base_url == "/":
+                continue
+            if link == base_prefix or link.startswith(base_prefix + "/"):
+                continue
+            issues.append(
+                {
+                    "file": str(html_path.relative_to(site_dir)),
+                    "link": link,
+                }
+            )
+
+report = {
+    "count": len(issues),
+    "issues": issues[:1000],
+}
+out_json.parent.mkdir(parents=True, exist_ok=True)
+out_json.write_text(json.dumps(report, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
+
+if issues:
+    print(f"root-absolute-check: found {len(issues)} root-absolute links")
+    for item in issues[:40]:
+        print(f"  {item['file']}: {item['link']}")
+else:
+    print("root-absolute-check: no root-absolute internal links found")
+PY
+  then
+    ROOT_ABS_COUNT=$(python3 - "$ROOT_ABS_LINKS_JSON" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as f:
+    data = json.load(f)
+print(int(data.get("count", 0)))
+PY
+)
+    if [[ "$ROOT_ABS_COUNT" -eq 0 ]]; then
+      record_result "root-absolute-links" "site" "$SITE_BUILD" "$ROOT_ABS_LOG" "success" "0" "0" "no root-absolute internal links"
+    else
+      if [[ "$STRICT" == "none" ]]; then
+        record_result "root-absolute-links" "site" "$SITE_BUILD" "$ROOT_ABS_LOG" "warning" "$ROOT_ABS_COUNT" "0" "found $ROOT_ABS_COUNT root-absolute internal links"
+      else
+        record_result "root-absolute-links" "site" "$SITE_BUILD" "$ROOT_ABS_LOG" "error" "0" "$ROOT_ABS_COUNT" "found $ROOT_ABS_COUNT root-absolute internal links"
+      fi
+    fi
+  else
+    record_result "root-absolute-links" "site" "$SITE_BUILD" "$ROOT_ABS_LOG" "error" "0" "1" "failed to run root-absolute link check"
   fi
 fi
 
@@ -1110,6 +1259,7 @@ echo "summary: $SUMMARY_MD"
 echo "summary-json: $SUMMARY_JSON"
 echo "manifest-content: $MANIFEST_CONTENT_JSON"
 echo "manifest-figures: $MANIFEST_FIGURES_JSON"
+echo "base-url: $BASE_URL"
 echo "site-src: $SITE_SRC"
 echo "site: $SITE_BUILD"
 echo "processed: $TOTAL_PROCESSED success=$TOTAL_SUCCESS warning=$TOTAL_WARNING error=$TOTAL_ERROR status=$run_status"

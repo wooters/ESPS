@@ -28,14 +28,33 @@ def title_of(entry: dict[str, Any]) -> str:
     return entry.get("title") or Path(rel_doc(entry)).stem
 
 
-def list_section(entries: list[dict[str, Any]]) -> str:
+def normalize_base_url(base_url: str) -> str:
+    b = (base_url or "/").strip()
+    if not b:
+        return "/"
+    if not b.startswith("/"):
+        b = "/" + b
+    if not b.endswith("/"):
+        b = b + "/"
+    return b
+
+
+def rel_link(from_doc: str, to_doc: str) -> str:
+    from_dir = str(Path(from_doc).parent)
+    if not from_dir:
+        from_dir = "."
+    rel = os.path.relpath(to_doc, start=from_dir)
+    return rel.replace(os.sep, "/")
+
+
+def list_section(entries: list[dict[str, Any]], from_doc: str) -> str:
     if not entries:
         return "- _No entries generated in this build._\n"
     lines = []
     for e in entries:
         t = title_of(e)
         d = rel_doc(e)
-        lines.append(f"- [{t}](/{d})")
+        lines.append(f"- [{t}]({rel_link(from_doc, d)})")
     return "\n".join(lines) + "\n"
 
 
@@ -87,17 +106,17 @@ def build_indexes(docs_dir: Path, content: dict[str, Any], figures: dict[str, An
 
     write_text(
         docs_dir / "notes/index.md",
-        "# Applications Notes / Legacy Docs\n\n" + list_section(cats.get("notes", [])),
+        "# Applications Notes / Legacy Docs\n\n" + list_section(cats.get("notes", []), "notes/index.md"),
     )
 
     write_text(
         docs_dir / "help/index.md",
-        "# Waves Help\n\n" + list_section(cats.get("help", [])),
+        "# Waves Help\n\n" + list_section(cats.get("help", []), "help/index.md"),
     )
 
     write_text(
         docs_dir / "extras/index.md",
-        "# Extras\n\n" + list_section(cats.get("extras", [])),
+        "# Extras\n\n" + list_section(cats.get("extras", []), "extras/index.md"),
     )
 
     gps_entries = figures.get("gps", [])
@@ -115,9 +134,9 @@ def build_indexes(docs_dir: Path, content: dict[str, Any], figures: dict[str, An
                 "",
             ]
         )
-        + list_section(gps_entries)
+        + list_section(gps_entries, "figures/index.md")
         + "\n## AW Covers\n\n"
-        + list_section(aw_entries),
+        + list_section(aw_entries, "figures/index.md"),
     )
 
     write_text(
@@ -136,6 +155,7 @@ def build_indexes(docs_dir: Path, content: dict[str, Any], figures: dict[str, An
 
 
 def build_mkdocs(site_src: Path, content: dict[str, Any], figures: dict[str, Any], base_url: str) -> str:
+    norm_base_url = normalize_base_url(base_url)
     cats = content.get("categories", {})
     man_entries = sorted(cats.get("man", []), key=lambda e: (e.get("section", ""), title_of(e).lower()))
     notes_entries = sorted(cats.get("notes", []), key=lambda e: title_of(e).lower())
@@ -146,8 +166,10 @@ def build_mkdocs(site_src: Path, content: dict[str, Any], figures: dict[str, Any
 
     lines: list[str] = []
     lines.append(f"site_name: {q('ESPS Documentation (Revival)')}")
+    if norm_base_url == "/ESPS/":
+        lines.append(f"site_url: {q('https://wooters.github.io/ESPS/')}")
     lines.append("extra:")
-    lines.append(f"  base_url_hint: {q(base_url)}")
+    lines.append(f"  base_url_hint: {q(norm_base_url)}")
     lines.append(f"docs_dir: {q('docs')}")
     lines.append("use_directory_urls: true")
     lines.append("theme:")
